@@ -1,6 +1,6 @@
 ---
 id: squash-commit
-status: in_progress
+status: in_review
 priority: high
 kind: task
 ---
@@ -107,3 +107,28 @@ The other two `approved` → `done` paths:
 6. **Scope** — the plugin squashes only what the plugin merges. Making the key
    bite in this repository means `create_branch: true` here, which is its own
    backlog entry, not part of this task.
+
+## Result
+
+Done as planned, in commit 784137d, across eight files. The one deviation: step 8
+grew an extra assertion — `the branch path survives the rewrite` still demands the
+word `fast-forward`, which the key-off case keeps, so no test needed loosening.
+
+## How to review
+
+1. Run the suite — `powershell -NoProfile -File tests\Test-Plugin.ps1`. It prints
+   `passed 62, failed 0, skipped 0`; 61 of those passed before this change and the
+   new one is `the approved to done transition states both merge shapes`. Run; it
+   is the output above.
+2. Read `skills/task/SKILL.md`, **Transitions**, `approved` → `done`. This is the
+   change that matters: the branch-and-no-request bullet now splits into the
+   squash case with its three commands and the fast-forward case, and the other
+   two bullets say the key decides nothing there.
+3. Read the **Configuration** section in the same file for why `squash_on_merge`
+   is called out as *not* a ceiling, unlike the other two keys.
+4. `git show 784137d -- README.md docs/tasks/README.md` for the two human-facing
+   tables and the paragraph that says where the key does nothing.
+5. **Not run:** the squash path itself. This project sets `create_branch: false`,
+   so no task here reaches a merge, and no branch was created to merge. The
+   commands are stated in the protocol, not executed by it — what a reviewer can
+   check is the wording, and that `-D` is justified in place.
