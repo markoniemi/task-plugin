@@ -40,5 +40,7 @@ Priorities: `high` | `medium` | `low`.
 
 - when tasks workflow and plugin/skill implementation, a powerpoint presentation would be nice
 
+### not-done status [planning, high]
 
+Need a status stating that task is not implemented or the implementation reverted. What is the corresponding state in jira? Status means that task file can deleted, branch and commits removed and no need to update docs when task is deleted.
  
