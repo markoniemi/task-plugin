@@ -11,14 +11,18 @@ Add config item that tells ai to squash commits when merging to main.
 
 ## What the key does
 
-A third configuration key, `squash_commits`, default `false`, alongside
+A third configuration key, `squash_on_merge`, default `true`, alongside
 `create_branch` and `create_pull_request`. It is read from the same three layers,
-with the same precedence, and it is the same kind of ceiling: `false` means no
-task is ever squashed.
+with the same precedence.
 
-It bites in exactly one place: the **`approved` → `done`** transition, on the
-branch-and-no-request path, which today reads "merge it into `main`
-(fast-forward), delete the branch". With `squash_commits` on that path becomes:
+**It governs the one merge the agent performs itself, and nothing else.** The
+plugin owns a merge only on the branch-and-no-request path of **`approved` →
+`done`**; with a request the host merges, squashes and deletes, and with no
+branch there is no merge at all. The key is therefore a no-op in both of those,
+and the protocol says so in one line each so the agent does not improvise.
+
+That path today reads "merge it into `main` (fast-forward), delete the branch".
+With `squash_on_merge` on — the default — it becomes:
 
 ```
 git merge --squash <branch>
@@ -27,68 +31,69 @@ git branch -D <branch>
 ```
 
 `git branch -d` refuses a squash-merged branch — git does not see it as merged —
-so the delete must be `-D` on that path only. The fast-forward path keeps `-d`.
+so the delete must be `-D` on that path only. With the key off, the merge stays
+fast-forward and the delete stays `-d`.
 
-The other two `approved` → `done` paths are unaffected, and the plan states why
-in the protocol so the agent does not improvise:
+The other two `approved` → `done` paths:
 
-* **No branch** (`create_branch: false`, as in this project): there is nothing to
-  merge, so there is nothing to squash. The key never rewrites commits already on
-  `main`.
-* **A request**: the host merges, not the agent. The agent never runs a merge
-  there, so the key cannot change what it does. `references/host.md` gains one
-  line saying the human chooses the squash option in the host's UI (`gh pr merge
-  --squash`, `glab mr merge --squash`) when the project sets `squash_commits`.
+* **No branch** (`create_branch: false`, as in this project): nothing is merged,
+  so nothing is squashed. The key never rewrites commits already on `main`.
+* **A request**: the host merges, squashes and deletes the branch, by its own
+  repository settings. The agent runs no merge there, so the key cannot change
+  anything. `references/host.md` is left alone: the host's squash option is that
+  host's configuration, not this plugin's.
 
 ## Steps
 
-1. `.claude-plugin/plugin.json` — add `squash_commits` to `userConfig`
-   (`"type": "boolean"`, title, description, `"default": false`), and bump
+1. `.claude-plugin/plugin.json` — add `squash_on_merge` to `userConfig`
+   (`"type": "boolean"`, title, description, `"default": true`), and bump
    `version` to `0.6.0`.
 2. `skills/task/SKILL.md`:
    * **Configuration** — "Two keys" becomes "Three keys"; add the table row; add
-     the frontmatter example line; add `${user_config.squash_commits}` to the
-     precedence list.
+     the frontmatter example line; add `${user_config.squash_on_merge}` to the
+     precedence list. State there that this key, unlike the other two, governs
+     only the merge the agent performs itself.
    * **Transitions**, `approved` → `done` — split the branch-and-no-request
-     bullet into the fast-forward case and the squash case with the three
-     commands above and the `-D` note; add the one-line no-op statement to the
+     bullet into the squash case (default) and the fast-forward case, with the
+     three commands and the `-D` note; add the one-line no-op statement to the
      no-branch and the request bullets.
-3. `skills/task/references/host.md` — one line: with `squash_commits` on, the
-   human merges the request with the host's squash option.
-4. `skills/init/templates/Tasks.md` — add `squash_commits: false` to the
+3. `skills/init/templates/Tasks.md` — add `squash_on_merge: true` to the
    frontmatter and one clause to the sentence that explains the other two keys.
-5. `skills/init/SKILL.md:29` — add the key to the defaults it lists.
-6. `docs/tasks/README.md` — add the table row under **Configuration**, and the
-   sentence that `squash_commits` needs `create_branch: true` to mean anything.
-7. `README.md` (root) — same table row and the same sentence.
-8. `docs/tasks/Tasks.md` — add `squash_commits: false` to this project's own
-   frontmatter, so the template-drift test keeps passing.
-9. `tests/Test-Plugin.ps1`:
-   * `$script:ConfigDefaults` (line 174) — add `squash_commits = $false`.
+4. `skills/init/SKILL.md:29` — add the key to the defaults it lists.
+5. `docs/tasks/README.md` — add the table row under **Configuration**, and the
+   sentence that the key means nothing without `create_branch: true` and nothing
+   with `create_pull_request: true`, because the host squashes there.
+6. `README.md` (root) — same table row and the same sentence.
+7. `docs/tasks/Tasks.md` — add `squash_on_merge: true` to this project's own
+   frontmatter, so the template-drift test keeps passing. It is a no-op here
+   (`create_branch: false`), and that is the point of writing it down.
+8. `tests/Test-Plugin.ps1`:
+   * `$script:ConfigDefaults` (line 174) — add `squash_on_merge = $true`.
    * 'the manifest declares both configuration options' (line 335) — add the
-     `@('squash_commits', $false)` pair; rename to "all three".
+     `@('squash_on_merge', $true)` pair; rename to "all three".
    * 'the protocol states the keys, the layers and the precedence' (line 361) —
-     add `squash_commits` to the rule list.
+     add `squash_on_merge` to the rule list.
    * 'configuration is read from the frontmatter over the defaults' (line 420) —
-     add a `Squash` column to every case, a `squash on` case, and the assertion.
+     add a `Squash` column to every case, a `squash off` case, and the assertion.
    * 'this project states its own configuration' (line 448) and 'the template and
      this project do not drift' (line 494) — add the key to both lists.
    * 'the backlog template is a valid backlog' (line 472) — assert the template
-     default is `$false`.
+     default is `$true`.
+   * 'the branch path survives the rewrite' (line 373) — it asserts
+     `fast-forward` is still stated; keep that wording in the off case so the
+     assertion holds.
    * New case: the `approved` → `done` transition names `merge --squash` and
-     `branch -D`.
-10. Run `tests/Test-Plugin.ps1` and make it green.
+     `branch -D`, and the request bullet still says the host merges.
+9. Run `tests/Test-Plugin.ps1` and make it green.
 
-## Open questions
+## Decisions
 
-1. **Key name** — `squash_commits`, or `squash_on_merge` which says when it
-   applies? The plan assumes `squash_commits`.
-2. **Default** — `false` keeps every existing project behaving as it does today.
-   Confirm, or make it `true`.
-3. **The squash commit message** — the plan assumes `<kind>: <title>` from the
-   backlog heading, one line, no body. The alternative is a body listing the
-   squashed subjects.
-4. **The request path** — the plan leaves it to the human and only documents it
-   (step 3). The alternative is the agent running `gh pr merge --squash` itself,
-   which would be the first time it merges a request; that conflicts with "the
-   host merges it, not you".
+1. **Key name** — `squash_on_merge`. It says when it applies.
+2. **Default** — `true`. Existing projects that merge a local branch start
+   getting one commit per task; projects with requests or without branches are
+   unaffected.
+3. **The squash commit message** — `<kind>: <title>` from the backlog heading,
+   one line, no body.
+4. **The request path** — the key is a no-op. The host merges, squashes and
+   deletes by its own settings, and the agent never runs `gh pr merge`.
+   `references/host.md` is not touched.
