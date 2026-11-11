@@ -1,6 +1,6 @@
 ---
 id: not-done-status
-status: in_progress
+status: in_review
 priority: high
 kind: task
 ---
@@ -97,3 +97,32 @@ way.
 3. **`clean-tasks` scope** — `clean-tasks` deletes cancelled tasks, alongside the
    done ones, when a human asks it to clean. Cancelling does not delete anything
    by itself.
+
+## Result
+
+Done as planned, in commit 4f984e6, across eight files. One deviation, in step 8:
+the new test first forbade the string `git revert` anywhere in the transition,
+which the protocol fails on purpose — it names the command to hand it to the
+human. The assertion now forbids it inside a fenced block, where this protocol
+puts commands the agent is told to run, and separately requires the sentence that
+refuses to undo what landed.
+
+## How to review
+
+1. Run the suite — `powershell -NoProfile -File tests\Test-Plugin.ps1`. It prints
+   `passed 64, failed 0, skipped 0`; 62 passed before this change, and the two new
+   ones are `cancelling is human-only and never rewrites what landed` and
+   `clean-tasks deletes cancelled tasks and keeps the done guard`. Run; that is
+   the output.
+2. Read `skills/task/SKILL.md`, the `any → cancelled` transition, which is the
+   whole change. Check the three cases it splits on — unmerged branch, commits on
+   `main`, nothing committed — and that only the first one acts.
+3. Read `skills/clean-tasks/SKILL.md` step 1: the check that a rule outlives its
+   task file now says `done` only, with the reason stated beside it.
+4. `git show 4f984e6 -- docs/tasks/README.md` for the pipeline diagram with the
+   cancel arrow, and the paragraph that gives the Jira and GitHub equivalents.
+5. **Not run:** cancelling a task. No task in this project is cancelled, and this
+   project has no branches, so the `git branch -D` path has nothing to act on
+   here. What a reviewer can check is the wording and the two tests that pin it.
+   Cancelling `powerpoint presentation` would exercise the no-commits case if you
+   want it exercised.

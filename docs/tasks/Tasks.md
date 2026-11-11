@@ -42,7 +42,7 @@ Priorities: `high` | `medium` | `low`.
 
 - when tasks workflow and plugin/skill implementation, a powerpoint presentation would be nice
 
-### not-done status [in_progress, high]
+### not-done status [in_review, high]
 
 file: [not-done-status.md](not-done-status.md)
 
