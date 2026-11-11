@@ -1,6 +1,6 @@
 ---
 id: squash-commit
-status: in_review
+status: done
 priority: high
 kind: task
 ---
