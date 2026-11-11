@@ -515,9 +515,23 @@ Test-Case 'the template and this project do not drift' {
 
     foreach ($shared in @('draft', 'planning', 'planned', 'in_progress', 'in_review',
                           'changes_requested', 'approved', 'done',
-                          'create_branch', 'create_pull_request', 'squash_on_merge')) {
+                          'create_branch', 'create_pull_request')) {
         Assert-True ($template -match [regex]::Escape($shared)) "the template is missing '$shared'"
         Assert-True ($mine -match [regex]::Escape($shared)) "this project's Tasks.md is missing '$shared'"
+    }
+
+    # The template states every key; a project need not. An omitted key falls back
+    # to the human's own answer and then to the default, so leaving out one that
+    # decides nothing here - squash_on_merge with create_branch: false - is a legal
+    # state, not drift. What would be drift is a key the template never names.
+    Assert-True ($template -match 'squash_on_merge') 'the template is missing squash_on_merge'
+
+    $lines = ($mine -split "`r?`n")
+    Assert-Equal '---' $lines[0].Trim() "this project's Tasks.md must open with the frontmatter"
+    for ($i = 1; $i -lt $lines.Count -and $lines[$i].Trim() -ne '---'; $i++) {
+        if ($lines[$i] -match '^([A-Za-z0-9_-]+):') {
+            Assert-True ($template -match [regex]::Escape($matches[1])) "this project states '$($matches[1])', which the template never names"
+        }
     }
     foreach ($text in @($template, $mine)) {
         Assert-True ($text -match '(?m)^##\s+Backlog\s*$') 'both must have a Backlog heading'
