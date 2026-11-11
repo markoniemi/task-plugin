@@ -119,7 +119,7 @@ Write-Host 'protocol carried over from AGENTS.md'
 Test-Case 'every status name survives in the task skill' {
     $body = Get-Content (Join-Path $root 'skills/task/SKILL.md') -Raw
     foreach ($status in @('draft', 'planning', 'planned', 'in_progress', 'in_review',
-                          'changes_requested', 'approved', 'done')) {
+                          'changes_requested', 'approved', 'done', 'cancelled')) {
         Assert-True ($body -match [regex]::Escape($status)) "status '$status' is missing"
     }
 }
@@ -274,7 +274,7 @@ Test-Case 'every task file states id, status, priority and branch' {
     }
 
     $statuses = @('draft', 'planning', 'planned', 'in_progress', 'in_review',
-                  'changes_requested', 'approved', 'done')
+                  'changes_requested', 'approved', 'done', 'cancelled')
     foreach ($file in $files) {
         $fm = Get-Frontmatter $file.FullName
         foreach ($key in $keys) {
@@ -426,6 +426,38 @@ Test-Case 'the approved to done transition states both merge shapes' {
     Assert-True (-not ($step -match 'gh pr merge')) 'the agent must not merge the request itself'
 }
 
+Test-Case 'cancelling is human-only and never rewrites what landed' {
+    # The whole value of the status is that it costs nothing to set. An agent that
+    # cancels by itself, or that reverts main to make a cancellation true, makes it
+    # expensive instead.
+    $body = (Get-Content (Join-Path $root 'skills/task/SKILL.md') -Raw) -replace "`r`n", "`n"
+    $pattern = '(?s)\n\*\*any.{0,30}cancelled(.*?)(?=\n\*\*\x60|\n##\s)'
+    $step = [regex]::Match($body, $pattern).Value
+    Assert-True ($step.Length -gt 0) 'the cancelled transition was not found'
+
+    Assert-True ($step -match 'human only') 'cancelling must be stated as human only'
+    Assert-True ($step -match 'git branch -D') 'the unmerged branch must be deleted'
+    Assert-True ($step -match 'Never revert') 'the transition must refuse to undo what landed'
+
+    # Naming git revert to hand it to the human is the point; prescribing it as a
+    # command of this transition is what must not happen. Commands this protocol
+    # tells the agent to run are in fenced blocks, so that is where to look.
+    foreach ($block in [regex]::Matches($step, '(?s)\x60\x60\x60(.*?)\x60\x60\x60')) {
+        foreach ($forbidden in @('git revert', 'git reset', 'git push')) {
+            Assert-True (-not ($block.Groups[1].Value -match [regex]::Escape($forbidden))) "the cancelled transition prescribes '$forbidden'"
+        }
+    }
+}
+
+Test-Case 'clean-tasks deletes cancelled tasks and keeps the done guard' {
+    $body = Get-Content (Join-Path $root 'skills/clean-tasks/SKILL.md') -Raw
+    Assert-True ($body -match 'cancelled') 'clean-tasks must name the cancelled status'
+    # The check that a rule outlives its task file is the skill's reason to exist;
+    # exempting cancelled tasks must not quietly exempt everything.
+    Assert-True ($body -match 'written down') 'clean-tasks must keep the check that a rule is written down'
+    Assert-True ($body -match 'only when a human|Only when you ask|when a human\s+asks') 'clean-tasks must stay human-triggered'
+}
+
 Test-Case 'the sections the other skills point at still exist' {
     # Cutting prose is cheap to get wrong: these headings are referred to by name,
     # from this file and from the other three skills.
@@ -497,7 +529,7 @@ Test-Case 'the backlog template is a valid backlog' {
     Assert-Equal $true $config['squash_on_merge'] 'the template default for squash_on_merge'
 
     foreach ($status in @('draft', 'planning', 'planned', 'in_progress', 'in_review',
-                          'changes_requested', 'approved', 'done')) {
+                          'changes_requested', 'approved', 'done', 'cancelled')) {
         Assert-True ($text -match [regex]::Escape($status)) "the template must name the status '$status'"
     }
     foreach ($priority in @('high', 'medium', 'low')) {
@@ -514,7 +546,7 @@ Test-Case 'the template and this project do not drift' {
     $mine = Get-Content (Join-Path $root 'docs/tasks/Tasks.md') -Raw
 
     foreach ($shared in @('draft', 'planning', 'planned', 'in_progress', 'in_review',
-                          'changes_requested', 'approved', 'done',
+                          'changes_requested', 'approved', 'done', 'cancelled',
                           'create_branch', 'create_pull_request')) {
         Assert-True ($template -match [regex]::Escape($shared)) "the template is missing '$shared'"
         Assert-True ($mine -match [regex]::Escape($shared)) "this project's Tasks.md is missing '$shared'"

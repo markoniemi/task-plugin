@@ -28,6 +28,8 @@ Statuses:
 * `changes_requested` — review asked for changes.
 * `approved` — review passed, ready to merge.
 * `done` — merged and branch deleted.
+* `cancelled` — it will not happen, or it happened and was reverted. A human sets
+  it, from any status but `done`, and nothing comes back out of it.
 
 Priorities: `high` | `medium` | `low`.
 

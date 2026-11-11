@@ -101,14 +101,24 @@ settings. In both cases the key changes nothing.
 
 ```
 Tasks.md entry ──► draft ──► planning ──► planned ──► in_progress ──► in_review ──► approved ──► done
-                                                                          │  ▲
-                                                                          ▼  │
-                                                                   changes_requested
+                     │                                                    │  ▲
+                     │                                                    ▼  │
+                     │                                             changes_requested
+                     └───────────────── any status but done ──────────────────► cancelled
 ```
 
 A **human** moves `draft` → `planning`, verifies the plan at `planned`, reviews the
 branch diff at `in_review`, and merges at `approved`. The AI does the rest. The
 plugin's `task` skill is what it does in each step.
+
+**Cancelling.** `cancelled` is the other end of the pipeline: the work will not
+happen, or it happened and was reverted. It is yours to set, from any status but
+`done`, and nothing comes back out of it — change your mind and you set the status
+back by hand. The AI never cancels a task itself. Picking a cancelled one up, it
+deletes the branch the task made if that branch was never merged, and leaves
+anything already committed on `main` exactly where it is: it names those commits
+and stops. Reverting them is yours to ask for. Jira calls this `Done` with the
+resolution `Won't Do`; GitHub closes the issue as *not planned*.
 
 **Skipping the plan.** The status decides whether there is one, not the kind. Move
 `draft` → `planning` to ask for a plan; move `draft` → `planned` yourself, leaving
@@ -122,6 +132,8 @@ seeing the change work, written by whoever implemented it. Start there rather th
 with the diff. Nothing records whether you followed it - moving the task to
 `approved` is the whole signal.
 
-Run `/task:clean-tasks` when `done` tasks pile up: it deletes each finished task
-file and its backlog entry, having first checked that whatever the task established
-is written down in the plugin's skills or here. The plans stay in git history.
+Run `/task:clean-tasks` when finished tasks pile up: it deletes each `done` and
+each `cancelled` task file with its backlog entry, having first checked — for the
+`done` ones — that whatever the task established is written down in the plugin's
+skills or here. A cancelled task established nothing, so it is simply deleted. The
+plans stay in git history.

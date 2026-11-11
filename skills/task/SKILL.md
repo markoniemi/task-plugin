@@ -36,7 +36,7 @@ and list the tasks with their statuses, and ask which one to take.
 ```yaml
 ---
 id: short-description
-status: draft | planning | planned | in_progress | in_review | changes_requested | approved | done
+status: draft | planning | planned | in_progress | in_review | changes_requested | approved | done | cancelled
 priority: high | medium | low
 kind: feature | bug | task
 branch: task/short-description
@@ -260,10 +260,28 @@ picks the new commits up when the branch is pushed.
   file now. Merged: delete the local branch and set `done`. Not merged yet: say so
   and stop, because merging it is the human's.
 
+**any → `cancelled`** — human only, from every status but `done`, and terminal:
+the work will not happen, or it happened and was reverted. Never set it yourself,
+whatever the task turns out to cost. A human who changes their mind sets the
+status back by hand; nothing transitions out of `cancelled`.
+
+What you do when you next pick a `cancelled` task up:
+
+* A branch the task made, never merged: delete it with `git branch -D <branch>`.
+  Its commits stay reachable through the reflog until the repository's `gc`
+  collects them, which is the only undo this needs.
+* Commits already on `main` — the task was reverted, or the project has no
+  branches: **name them and stop.** Never revert, reset or force-push to undo a
+  cancelled task. Reverting published work is the human's call, and they ask for
+  `git revert` by name.
+* Nothing committed: nothing to do.
+
+A cancelled task established nothing, so no documentation follows it.
+
 ## Cleaning up
 
 Deleting finished tasks is the `clean-tasks` skill, and it happens only when a human
-asks for it — never as part of reaching `done`.
+asks for it — never as part of reaching `done`, and never as part of cancelling.
 
 ## Shell
 

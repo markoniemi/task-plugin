@@ -29,7 +29,7 @@ marketplaces are blocked, at the cost of updating by hand.
 | `/task:init` | Set `docs/tasks/` up in a project that has no backlog yet. Run it first; it changes nothing if the backlog is already there. |
 | `/task:task [name-of-task]` | Start, continue or finish the named task. With no name, states the protocol and lists the tasks. |
 | `/task:next-task` | Take the next open backlog entry: highest priority, then first in `Tasks.md`. |
-| `/task:clean-tasks` | Delete the `done` tasks and their backlog entries, one commit each. Only when you ask. |
+| `/task:clean-tasks` | Delete the `done` and `cancelled` tasks and their backlog entries, one commit each. Only when you ask. |
 
 The protocol itself — the task file shape, the statuses and the transitions — is
 `skills/task/SKILL.md`.
@@ -63,6 +63,12 @@ Statuses: `draft` → `planning` → `planned` → `in_progress` → `in_review`
 `draft` → `planning`, verifies the plan at `planned`, reviews the diff at
 `in_review` and merges at `approved`; the agent does the rest. Priorities are
 `high`, `medium` and `low`.
+
+`cancelled` is the other terminal status: the work will not happen, or it happened
+and was reverted — Jira's `Done` with the resolution `Won't Do`, GitHub's *closed
+as not planned*. A human sets it, from any status but `done`, and nothing comes
+back out of it. The agent then deletes the task's branch if it was never merged,
+and leaves commits already on `main` alone rather than reverting them.
 
 **Whether a plan is required is the status, not the kind.** `planning` asks for
 one. Setting `planned` yourself, with no plan in the task file, waives it and the

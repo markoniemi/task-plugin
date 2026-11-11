@@ -47,6 +47,9 @@ Statuses:
 * `changes_requested` - review asked for changes.
 * `approved` - review passed, ready to land.
 * `done` - merged, or committed on `main` when the project uses no branches.
+* `cancelled` - it will not happen, or it happened and was reverted. Yours to set,
+  from any status but `done`, and nothing comes back out of it. The AI deletes the
+  task's unmerged branch and leaves anything already on `main` alone.
 
 Priorities: `high` | `medium` | `low`.
 
