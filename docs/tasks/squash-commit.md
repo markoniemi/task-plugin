@@ -1,6 +1,6 @@
 ---
 id: squash-commit
-status: planned
+status: in_progress
 priority: high
 kind: task
 ---
@@ -97,3 +97,13 @@ The other two `approved` → `done` paths:
 4. **The request path** — the key is a no-op. The host merges, squashes and
    deletes by its own settings, and the agent never runs `gh pr merge`.
    `references/host.md` is not touched.
+5. **`commit_after_review` was considered instead and rejected.** It would have
+   the agent hold the implementation uncommitted until a human sets `approved`.
+   That removes git as the safety net over the longest wait in the pipeline, it
+   leaves nothing for `create_pull_request` to open a request from, it gives the
+   reviewer a working tree instead of a diff, and it loses the record of what
+   changed between review rounds. It collides with the protocol besides: both
+   `in_progress` and `in_review` commit the task file.
+6. **Scope** — the plugin squashes only what the plugin merges. Making the key
+   bite in this repository means `create_branch: true` here, which is its own
+   backlog entry, not part of this task.
