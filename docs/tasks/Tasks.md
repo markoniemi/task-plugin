@@ -44,6 +44,8 @@ Priorities: `high` | `medium` | `low`.
 
 Need a status stating that task is not implemented or the implementation reverted. What is the corresponding state in jira? Status means that task file can deleted, branch and commits removed and no need to update docs when task is deleted.
  
-### squash commit [planning, high]
+### squash commit [planned, high]
+
+file: [squash-commit.md](squash-commit.md)
 
 Add config item that tells ai to squash commits when merging to main.
