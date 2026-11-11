@@ -1,7 +1,6 @@
 ---
 create_branch: false
 create_pull_request: false
-squash_on_merge: true
 ---
 
 # Task Backlog
