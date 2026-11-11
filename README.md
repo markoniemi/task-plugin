@@ -71,12 +71,13 @@ and review at `in_review` is a human's for every kind.
 
 ## Configuration
 
-The plugin asks for two values when you enable it, and `/config` shows them:
+The plugin asks for three values when you enable it, and `/config` shows them:
 
-| Key | Default | What it permits |
+| Key | Default | What it decides |
 | :- | :- | :- |
 | `create_branch` | `true` | A task may have its own branch. Off: every task is committed on `main`. |
 | `create_pull_request` | `false` | Reaching `in_review` pushes the branch and opens a pull request on GitHub, or a merge request on GitLab. The host then does the merging. |
+| `squash_on_merge` | `true` | Merging a task branch squashes it into one commit on `main`, named after the backlog heading. Off: the merge is a fast-forward. |
 
 Those answers are per user, so a project states its own in YAML frontmatter at the
 top of its `docs/tasks/Tasks.md`, which wins over them:
@@ -85,13 +86,18 @@ top of its `docs/tasks/Tasks.md`, which wins over them:
 ---
 create_branch: true
 create_pull_request: false
+squash_on_merge: true
 ---
 ```
 
-Each key is a ceiling, not a default: `create_branch: false` means no task gets a
-branch, and nothing per task overrides it. `create_pull_request: true` needs
-`create_branch: true`, plus `gh` or `glab` authenticated for the `origin` remote;
-the plugin picks the tool from that remote.
+The first two are ceilings, not defaults: `create_branch: false` means no task
+gets a branch, and nothing per task overrides it. `create_pull_request: true`
+needs `create_branch: true`, plus `gh` or `glab` authenticated for the `origin`
+remote; the plugin picks the tool from that remote.
+
+`squash_on_merge` governs only the merge the agent runs itself — a task branch
+with no request. With no branch nothing is merged, and with a request the host
+merges, squashes and deletes by its own repository settings.
 
 ## Tests
 

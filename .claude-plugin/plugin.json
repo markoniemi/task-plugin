@@ -1,7 +1,7 @@
 {
   "name": "task",
   "displayName": "task",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "A backlog-to-branch task protocol: a human writes down what should happen, the agent plans it, implements it on a branch, and the human verifies and merges.",
   "author": {
     "name": "Marko Niemi",
@@ -23,6 +23,12 @@
       "title": "Open a pull request",
       "description": "Whether reaching in_review opens a pull request on GitHub, or a merge request on GitLab. Needs a branch.",
       "default": false
+    },
+    "squash_on_merge": {
+      "type": "boolean",
+      "title": "Squash the task branch into one commit",
+      "description": "Whether merging a task branch into main squashes it into a single commit. Only applies to the merge the agent performs itself: with pull requests on, the host squashes.",
+      "default": true
     }
   }
 }

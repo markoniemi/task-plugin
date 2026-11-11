@@ -130,12 +130,13 @@ whole life of the task. Keep the mirror in step, in both directions:
 
 ## Configuration
 
-Two keys decide what the transitions may do. Both are booleans.
+Three keys decide what the transitions may do. All three are booleans.
 
-| Key | Default | What it permits |
+| Key | Default | What it decides |
 | :- | :- | :- |
 | `create_branch` | `true` | A task may have its own branch. |
 | `create_pull_request` | `false` | Reaching `in_review` opens a request on the host. |
+| `squash_on_merge` | `true` | Merging a task branch squashes it into one commit. |
 
 Precedence for each key, highest first:
 
@@ -145,21 +146,28 @@ Precedence for each key, highest first:
    ---
    create_branch: true
    create_pull_request: false
+   squash_on_merge: true
    ---
    ```
 
 2. The value the human gave Claude Code for this plugin: `create_branch` is
-   `${user_config.create_branch}` and `create_pull_request` is
-   `${user_config.create_pull_request}`.
+   `${user_config.create_branch}`, `create_pull_request` is
+   `${user_config.create_pull_request}` and `squash_on_merge` is
+   `${user_config.squash_on_merge}`.
 3. The defaults in the table above.
 
 An unknown key in that frontmatter is ignored. A value that is neither `true` nor
 `false` is not guessed at: stop and ask the human to fix it. A frontmatter block
 that is not at the very top of `Tasks.md` is not configuration.
 
-Each key is a **ceiling, not a default**: `false` takes the thing away from every
-task and nothing per task overrides it, and `true` only permits it — which work
-uses one is this protocol's decision.
+The first two keys are a **ceiling, not a default**: `false` takes the thing away
+from every task and nothing per task overrides it, and `true` only permits it —
+which work uses one is this protocol's decision.
+
+`squash_on_merge` is not a ceiling. It shapes **the one merge this protocol
+performs itself**, in `approved` → `done` with a branch and no request, and it
+decides nothing anywhere else: with no branch nothing is merged, and with a
+request the host merges and squashes by its own settings.
 
 `create_pull_request: true` together with `create_branch: false` is a
 contradiction: there is no branch to open a request from. Report it and stop
@@ -230,10 +238,24 @@ picks the new commits up when the branch is pushed.
 **`approved` → `done`** — how the work lands depends on what was permitted:
 
 * No branch, or a branch `branch:` names that was never made: there is nothing to
-  merge. Set `done` and mirror it.
-* A branch and no request: merge it into `main` (fast-forward), delete the branch,
-  set `done`.
-* A request: the host merges it, not you. Check that it is merged as
+  merge, so `squash_on_merge` decides nothing. Set `done` and mirror it.
+* A branch and no request: merge it into `main`, delete the branch, set `done`.
+  How you merge is `squash_on_merge`:
+  * On — the default — squash the branch into one commit whose message is
+    `<kind>: <title>` from the backlog heading:
+
+    ```
+    git merge --squash <branch>
+    git commit -m "<kind>: <title>"
+    git branch -D <branch>
+    ```
+
+    The delete is `-D` here because git does not record a squashed branch as
+    merged and `-d` refuses it. Nothing else justifies `-D`.
+  * Off: merge it fast-forward and delete the branch with `git branch -d`.
+* A request: the host merges it, not you, and the host squashes and deletes the
+  branch by its own settings, so `squash_on_merge` decides nothing here either.
+  Check that it is merged as
   `${CLAUDE_PLUGIN_ROOT}/skills/task/references/host.md` describes — read that
   file now. Merged: delete the local branch and set `done`. Not merged yet: say so
   and stop, because merging it is the human's.

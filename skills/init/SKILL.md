@@ -26,7 +26,8 @@ for what these files mean, is
    fill the empty `## Backlog` heading with an example.
 3. Commit the two files.
 4. Report the two paths, the configuration the frontmatter now states
-   (`create_branch: true`, `create_pull_request: false`) and that it is edited in
+   (`create_branch: true`, `create_pull_request: false`, `squash_on_merge: true`)
+   and that it is edited in
    `Tasks.md`, and that the next step is a backlog entry plus
    `/task:task <heading>`.
 

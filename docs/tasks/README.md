@@ -74,18 +74,25 @@ The top of `Tasks.md` carries this project's answers, as YAML frontmatter:
 ---
 create_branch: true
 create_pull_request: false
+squash_on_merge: true
 ---
 ```
 
-| Key | Default | What it permits |
+| Key | Default | What it decides |
 | :- | :- | :- |
 | `create_branch` | `true` | A task may have its own branch. Off: everything is committed on `main`. |
 | `create_pull_request` | `false` | Reaching `in_review` opens a pull request on GitHub, or a merge request on GitLab, instead of leaving the branch to be read locally. On: the host does the merging, and the AI only checks that it happened. |
+| `squash_on_merge` | `true` | Merging a task branch squashes it into one commit on `main`, named after the backlog heading. Off: the merge is a fast-forward and every commit of the task stays. |
 
-Each key is a ceiling rather than a default: `create_branch: false` takes the
+The first two are ceilings rather than defaults: `create_branch: false` takes the
 branch away from every task, whatever else is written down. Omit a key and the
 value falls back to your own answer in `/config`, then to the default above. The
 AI reads these keys itself; edit them and the next task follows them.
+
+`squash_on_merge` reaches only the merge the AI performs itself. With
+`create_branch: false` nothing is merged, and with `create_pull_request: true`
+GitHub or GitLab merges, squashes and deletes the branch by that repository's own
+settings. In both cases the key changes nothing.
 
 `create_pull_request: true` needs `create_branch: true`, and it needs `gh` or
 `glab` on `PATH` and authenticated for the `origin` remote.

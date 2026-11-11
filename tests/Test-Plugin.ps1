@@ -171,7 +171,8 @@ Test-Case 'no living file names AGENTS.md as the rules' {
     }
 }
 
-$script:ConfigDefaults = @{ create_branch = $true; create_pull_request = $false }
+$script:ConfigDefaults = @{ create_branch = $true; create_pull_request = $false
+                            squash_on_merge = $true }
 $script:ConfigOptionKeys = @('type', 'title', 'description', 'required', 'default',
                              'options', 'multiple', 'sensitive', 'min', 'max')
 
@@ -332,11 +333,12 @@ Test-Case 'a heading that cannot make a slug is rejected' {
 Write-Host 'plugin configuration'
 
 
-Test-Case 'the manifest declares both configuration options' {
+Test-Case 'the manifest declares all three configuration options' {
     $manifest = Get-JsonFile '.claude-plugin/plugin.json'
     Assert-True ($null -ne $manifest.userConfig) 'plugin.json must declare userConfig'
 
-    foreach ($pair in @(@('create_branch', $true), @('create_pull_request', $false))) {
+    foreach ($pair in @(@('create_branch', $true), @('create_pull_request', $false),
+                        @('squash_on_merge', $true))) {
         $option = $manifest.userConfig.($pair[0])
         Assert-True ($null -ne $option) "userConfig.$($pair[0]) is missing"
         Assert-Equal 'boolean' $option.type "type of $($pair[0])"
@@ -358,8 +360,8 @@ Test-Case 'no userConfig option carries a key Claude Code would reject' {
 
 Test-Case 'the protocol states the keys, the layers and the precedence' {
     $body = Get-Content (Join-Path $root 'skills/task/SKILL.md') -Raw
-    foreach ($rule in @('create_branch', 'create_pull_request', 'Tasks.md',
-                        '${user_config.', 'frontmatter', 'recedence')) {
+    foreach ($rule in @('create_branch', 'create_pull_request', 'squash_on_merge',
+                        'Tasks.md', '${user_config.', 'frontmatter', 'recedence')) {
         Assert-True ($body -match [regex]::Escape($rule)) "the configuration section must state '$rule'"
     }
 }
@@ -406,6 +408,24 @@ Test-Case 'both transitions that need the host file name it' {
     }
 }
 
+Test-Case 'the approved to done transition states both merge shapes' {
+    # squash_on_merge only means anything where the agent merges itself, so the
+    # commands and the no-ops belong in that transition, not just in the table.
+    $body = (Get-Content (Join-Path $root 'skills/task/SKILL.md') -Raw) -replace "`r`n", "`n"
+    $pattern = '(?s)\n\*\*\x60approved.{0,30}done(.*?)(?=\n\*\*\x60|\n##\s)'
+    $step = [regex]::Match($body, $pattern).Value
+    Assert-True ($step.Length -gt 0) 'the approved to done transition was not found'
+
+    foreach ($rule in @('squash_on_merge', 'git merge --squash', 'git branch -D',
+                        'git branch -d', 'fast-forward')) {
+        Assert-True ($step -match [regex]::Escape($rule)) "the transition must state '$rule'"
+    }
+    # The two paths the agent does not merge on must say the key decides nothing,
+    # or the agent is left to guess at squashing a history it does not own.
+    Assert-True ($step -match 'the host merges it, not you') 'the request path must still be the host-s'
+    Assert-True (-not ($step -match 'gh pr merge')) 'the agent must not merge the request itself'
+}
+
 Test-Case 'the sections the other skills point at still exist' {
     # Cutting prose is cheap to get wrong: these headings are referred to by name,
     # from this file and from the other three skills.
@@ -419,17 +439,20 @@ Test-Case 'the sections the other skills point at still exist' {
 
 Test-Case 'configuration is read from the frontmatter over the defaults' {
     $cases = @(
-        @{ Name = 'no frontmatter';  Text = "# Task Backlog`n`ntext";                       Branch = $true;  Pr = $false },
-        @{ Name = 'branch off';      Text = "---`ncreate_branch: false`n---`n# Backlog";    Branch = $false; Pr = $false },
-        @{ Name = 'request on';      Text = "---`ncreate_pull_request: true`n---`n";        Branch = $true;  Pr = $true },
-        @{ Name = 'both set';        Text = "---`ncreate_branch: false`ncreate_pull_request: true`n---`n"; Branch = $false; Pr = $true },
-        @{ Name = 'unknown key';     Text = "---`nwhatever: 3`n---`n";                      Branch = $true;  Pr = $false },
-        @{ Name = 'not at the top';  Text = "# Backlog`n`n---`ncreate_branch: false`n---`n"; Branch = $true; Pr = $false }
+        @{ Name = 'no frontmatter';  Text = "# Task Backlog`n`ntext";                       Branch = $true;  Pr = $false; Squash = $true },
+        @{ Name = 'branch off';      Text = "---`ncreate_branch: false`n---`n# Backlog";    Branch = $false; Pr = $false; Squash = $true },
+        @{ Name = 'request on';      Text = "---`ncreate_pull_request: true`n---`n";        Branch = $true;  Pr = $true;  Squash = $true },
+        @{ Name = 'squash off';      Text = "---`nsquash_on_merge: false`n---`n# Backlog";  Branch = $true;  Pr = $false; Squash = $false },
+        @{ Name = 'both set';        Text = "---`ncreate_branch: false`ncreate_pull_request: true`n---`n"; Branch = $false; Pr = $true; Squash = $true },
+        @{ Name = 'all three set';   Text = "---`ncreate_branch: true`ncreate_pull_request: false`nsquash_on_merge: false`n---`n"; Branch = $true; Pr = $false; Squash = $false },
+        @{ Name = 'unknown key';     Text = "---`nwhatever: 3`n---`n";                      Branch = $true;  Pr = $false; Squash = $true },
+        @{ Name = 'not at the top';  Text = "# Backlog`n`n---`nsquash_on_merge: false`n---`n"; Branch = $true; Pr = $false; Squash = $true }
     )
     foreach ($case in $cases) {
         $config = Get-TaskConfig $case.Text
         Assert-Equal $case.Branch $config['create_branch'] "create_branch with $($case.Name)"
         Assert-Equal $case.Pr $config['create_pull_request'] "create_pull_request with $($case.Name)"
+        Assert-Equal $case.Squash $config['squash_on_merge'] "squash_on_merge with $($case.Name)"
     }
 }
 
@@ -445,7 +468,7 @@ Test-Case 'this project states its own configuration' {
     Assert-True ($text.TrimStart() -match '^---') 'docs/tasks/Tasks.md must open with the configuration frontmatter'
 
     $config = Get-TaskConfig $text
-    foreach ($key in @('create_branch', 'create_pull_request')) {
+    foreach ($key in @('create_branch', 'create_pull_request', 'squash_on_merge')) {
         Assert-True ($config[$key] -is [bool]) "$key must be a boolean"
     }
 }
@@ -471,6 +494,7 @@ Test-Case 'the backlog template is a valid backlog' {
     $config = Get-TaskConfig $text
     Assert-Equal $true $config['create_branch'] 'the template default for create_branch'
     Assert-Equal $false $config['create_pull_request'] 'the template default for create_pull_request'
+    Assert-Equal $true $config['squash_on_merge'] 'the template default for squash_on_merge'
 
     foreach ($status in @('draft', 'planning', 'planned', 'in_progress', 'in_review',
                           'changes_requested', 'approved', 'done')) {
@@ -491,7 +515,7 @@ Test-Case 'the template and this project do not drift' {
 
     foreach ($shared in @('draft', 'planning', 'planned', 'in_progress', 'in_review',
                           'changes_requested', 'approved', 'done',
-                          'create_branch', 'create_pull_request')) {
+                          'create_branch', 'create_pull_request', 'squash_on_merge')) {
         Assert-True ($template -match [regex]::Escape($shared)) "the template is missing '$shared'"
         Assert-True ($mine -match [regex]::Escape($shared)) "this project's Tasks.md is missing '$shared'"
     }

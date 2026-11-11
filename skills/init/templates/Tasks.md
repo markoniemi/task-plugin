@@ -1,6 +1,7 @@
 ---
 create_branch: true
 create_pull_request: false
+squash_on_merge: true
 ---
 
 # Task Backlog
@@ -11,9 +12,10 @@ directory.
 
 The frontmatter above is this project's configuration. `create_branch` decides
 whether a task may have its own branch; `create_pull_request` decides whether
-reaching `in_review` opens a pull request on GitHub, or a merge request on GitLab.
-Each key is a ceiling: `false` takes the thing away from every task, whatever else
-is written down. Edit them here and the next task follows them.
+reaching `in_review` opens a pull request on GitHub, or a merge request on GitLab;
+`squash_on_merge` decides whether merging a task branch squashes it into one
+commit. The first two are ceilings: `false` takes the thing away from every task,
+whatever else is written down. Edit them here and the next task follows them.
 
 Entry format: `### [<kind>: ]<short title> [<status>, <priority>]` plus a short
 explanation. Once the AI has created the task file, it adds a `file: <link>` line
