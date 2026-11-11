@@ -1,6 +1,6 @@
 ---
 id: not-done-status
-status: planned
+status: in_progress
 priority: high
 kind: task
 ---
@@ -89,15 +89,11 @@ way.
    * New case: `clean-tasks` names `cancelled` and still guards the `done` check.
 9. Run `tests/Test-Plugin.ps1` and make it green.
 
-## Open questions
+## Decisions
 
-1. **The name** — `cancelled`, or `wont_do` which matches Jira's resolution
-   word, or `not_done` as the entry called it. The plan assumes `cancelled`:
-   `not_done` reads as the absence of `done` rather than a decision, and
-   `wont_do` is a resolution name in a protocol that has no resolutions.
-2. **Reverting** — the plan refuses to revert commits already on `main` and hands
-   that to you. The alternative is the agent running `git revert` for every commit
-   the task made when you set `cancelled`. Say which.
-3. **`clean-tasks` scope** — the plan has it delete `cancelled` tasks alongside
-   `done` ones, when you ask it to clean. The alternative is that a cancelled task
-   is deleted the moment it is cancelled, with no separate cleaning step.
+1. **The name** — `cancelled`.
+2. **Reverting** — no revert on cancel. The agent names the commits the task made
+   and stops; reverting published work is the human's to ask for by name.
+3. **`clean-tasks` scope** — `clean-tasks` deletes cancelled tasks, alongside the
+   done ones, when a human asks it to clean. Cancelling does not delete anything
+   by itself.
