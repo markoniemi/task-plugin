@@ -113,21 +113,31 @@ mid-task:
   requires the key for every task file had started failing the moment the
   configuration changed.
 
+Review then cut further, in commit e5f9a85: the three sentences telling the agent
+how to write the message were themselves a format rule, and the protocol is read
+in full on every invocation. The command block keeps
+`git commit -m "<message>"` and the protocol says nothing else. The explanation of
+where a project states its own format stays in `docs/tasks/README.md`, read by a
+person once, and the test now guards that the transition prescribes no subject,
+mood, length or type prefix.
+
 ## How to review
 
 1. Run the suite — `powershell -NoProfile -File tests\Test-Plugin.ps1`. It prints
    `passed 65, failed 0, skipped 0`. 64 passed before; the new case is `the
    squashed commit message is the project-s, not the plugin-s`. Run; that is the
    output.
-2. `git show 13ac4bf -- skills/task/SKILL.md` — the whole change. The command
-   block lost `-m "<kind>: <title>"`, and the paragraph under it is what replaced
-   it. Check it tells you nothing about subject length, mood or prefixes.
-3. The same commit's test diff has two guards: the transition may not contain
-   `git commit -m`, `-m "<kind>` or `<kind>: <title>`, and it must point a project
-   at its own instructions file. The first is what stops the template growing
-   back.
+2. Read `skills/task/SKILL.md`, the `approved` → `done` squash case. It is five
+   lines: three commands and the note on `-D`. `git commit -m "<message>"` is the
+   whole of what the protocol says about the message. `git show 13ac4bf e5f9a85 --
+   skills/task/SKILL.md` shows how it got there, in two steps.
+3. The test diff carries the two guards: the transition may not contain
+   `-m "<kind>` or `<kind>: <title>`, and may not prescribe a subject, an
+   imperative mood, a character count or Conventional Commits. Those are what stop
+   a format growing back into a file the agent reads every time.
 4. `git show 13ac4bf -- docs/tasks/README.md README.md` for the two human-facing
-   paragraphs. `docs/tasks/README.md` says "`CLAUDE.md` or whatever this project
+   paragraphs, which are where the explanation lives now.
+   `docs/tasks/README.md` says "`CLAUDE.md` or whatever this project
    uses" rather than naming `AGENTS.md`: the test `no living file names AGENTS.md
    as the rules` forbids that file naming it, and the root README, which is
    outside that guard, names both.
