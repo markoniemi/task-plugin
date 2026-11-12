@@ -1,6 +1,6 @@
 ---
 id: merge-commit
-status: in_review
+status: done
 priority: high
 kind: task
 branch: task/merge-commit
