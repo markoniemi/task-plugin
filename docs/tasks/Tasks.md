@@ -49,3 +49,7 @@ Need a status stating that task is not implemented or the implementation reverte
 file: [squash-commit.md](squash-commit.md)
 
 Add config item that tells ai to squash commits when merging to main.
+
+### remind to clear context [planning, low]
+
+Is it possible to remind user to clear context after task is merged to master (or set to done)?
