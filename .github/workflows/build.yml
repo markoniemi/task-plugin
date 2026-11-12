@@ -21,4 +21,4 @@ jobs:
       # when the CLI is absent, so the build stays a build.
       - name: Unit tests
         shell: cmd
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/Test-Plugin.ps1
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/Test-Plugin.ps1 -Detailed

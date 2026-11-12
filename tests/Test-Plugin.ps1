@@ -1,8 +1,16 @@
-# Unit tests for the `task` plugin.
+﻿# Unit tests for the `task` plugin.
 #
-#   powershell -File tests/Test-Plugin.ps1
+#   powershell -File tests/Test-Plugin.ps1              failures and totals only
+#   powershell -File tests/Test-Plugin.ps1 -Detailed    every case, by section
 #
 # Plain PowerShell: Pester is not assumed to be installed. Exits 1 on any failure.
+#
+# Quiet is the default because the agent is what runs this suite, and 65 passing
+# lines tell it nothing it can act on. CI passes -Detailed, where a full log is
+# worth having. Everything goes to the output stream, never to the host, so a
+# caller can filter it.
+
+param([switch] $Detailed)
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
@@ -11,26 +19,33 @@ $script:Passed = 0
 $script:Failed = 0
 $script:Skipped = 0
 
+function Write-Section {
+    param([string] $Name)
+
+    if ($Detailed) { Write-Output $Name }
+}
+
 function Test-Case {
     param([string] $Name, [scriptblock] $Body)
 
     try {
         & $Body
         $script:Passed++
-        Write-Host "  PASS  $Name"
+        if ($Detailed) { Write-Output "  PASS  $Name" }
     }
     catch {
         $script:Failed++
-        Write-Host "  FAIL  $Name"
-        Write-Host "        $($_.Exception.Message)"
+        Write-Output "  FAIL  $Name"
+        Write-Output "        $($_.Exception.Message)"
     }
 }
 
 function Skip-Case {
     param([string] $Name, [string] $Reason)
 
+    # A skip always prints: it is the one line that says a case did not run.
     $script:Skipped++
-    Write-Host "  SKIP  $Name ($Reason)"
+    Write-Output "  SKIP  $Name ($Reason)"
 }
 
 function Assert-True {
@@ -74,7 +89,7 @@ function Get-SkillFrontmatter {
 
 $skillNames = @('task', 'next-task', 'clean-tasks', 'init')
 
-Write-Host 'plugin manifest'
+Write-Section 'plugin manifest'
 
 Test-Case 'plugin.json declares the plugin as `task`' {
     $manifest = Get-JsonFile '.claude-plugin/plugin.json'
@@ -84,7 +99,7 @@ Test-Case 'plugin.json declares the plugin as `task`' {
     Assert-True (-not [string]::IsNullOrWhiteSpace($manifest.author.name)) 'author.name must be set'
 }
 
-Write-Host 'marketplace manifest'
+Write-Section 'marketplace manifest'
 
 Test-Case 'marketplace.json lists the plugin at the repository root' {
     $marketplace = Get-JsonFile '.claude-plugin/marketplace.json'
@@ -98,7 +113,7 @@ Test-Case 'marketplace.json lists the plugin at the repository root' {
     Assert-Equal './' $entries[0].source 'entry source'
 }
 
-Write-Host 'skills'
+Write-Section 'skills'
 
 foreach ($name in $skillNames) {
     $skill = $name
@@ -114,7 +129,7 @@ Test-Case 'the task skill takes the task name as an argument' {
     Assert-True ($body -match '\$ARGUMENTS') 'skills/task/SKILL.md must reference $ARGUMENTS'
 }
 
-Write-Host 'protocol carried over from AGENTS.md'
+Write-Section 'protocol carried over from AGENTS.md'
 
 Test-Case 'every status name survives in the task skill' {
     $body = Get-Content (Join-Path $root 'skills/task/SKILL.md') -Raw
@@ -143,7 +158,7 @@ Test-Case 'clean-tasks keeps its two guards' {
     Assert-True ($body -match 'never') 'clean-tasks must keep the "never on your own" guard'
 }
 
-Write-Host 'the plugin replaces docs/tasks/AGENTS.md'
+Write-Section 'the plugin replaces docs/tasks/AGENTS.md'
 
 Test-Case 'docs/tasks/AGENTS.md is deleted' {
     Assert-True (-not (Test-Path (Join-Path $root 'docs/tasks/AGENTS.md'))) 'docs/tasks/AGENTS.md still exists'
@@ -154,7 +169,7 @@ Test-Case 'no living file names AGENTS.md as the rules' {
     # the files a reader is sent to for the rules may not.
     # The plugin's own README is exempt: it says there is no AGENTS.md, which is
     # the point.
-    $living = @((Join-Path $root 'docs/tasks/README.md'))
+    $living = @((Join-Path $root 'docs/tasks/README.md'), (Join-Path $root 'CLAUDE.md'))
 
     $hits = @(Select-String -Path $living -Pattern 'AGENTS\.md' |
         ForEach-Object { "$($_.Filename):$($_.LineNumber)" })
@@ -199,7 +214,7 @@ function Get-TaskConfig {
     throw 'the frontmatter has no closing delimiter'
 }
 
-Write-Host 'heading-derived task ids'
+Write-Section 'heading-derived task ids'
 
 function Get-TaskSlug {
     param([string] $Heading)
@@ -330,7 +345,7 @@ Test-Case 'a heading that cannot make a slug is rejected' {
     Assert-True (-not (Test-TaskSlug ('x' * 61))) 'a slug longer than 60 characters must be rejected'
 }
 
-Write-Host 'plugin configuration'
+Write-Section 'plugin configuration'
 
 
 Test-Case 'the manifest declares all three configuration options' {
@@ -533,7 +548,7 @@ Test-Case 'this project states its own configuration' {
     }
 }
 
-Write-Host 'the init skill'
+Write-Section 'the init skill'
 
 function Get-TemplatePath {
     param([string] $Name)
@@ -577,8 +592,28 @@ Test-Case 'the template and this project do not drift' {
                           'changes_requested', 'approved', 'done', 'cancelled',
                           'create_branch', 'create_pull_request')) {
         Assert-True ($template -match [regex]::Escape($shared)) "the template is missing '$shared'"
-        Assert-True ($mine -match [regex]::Escape($shared)) "this project's Tasks.md is missing '$shared'"
     }
+    foreach ($key in @('create_branch', 'create_pull_request')) {
+        Assert-True ($mine -match [regex]::Escape($key)) "this project's Tasks.md is missing '$key'"
+    }
+
+    # The template states the statuses because a new project's backlog is the only
+    # thing its reader has. This project has the plugin installed, so its own
+    # Tasks.md points at the protocol instead of repeating it. Drift here is the
+    # preamble growing its own copy of the statuses back; the brackets on the
+    # entries are the mirror, and another case checks those.
+    Assert-True ($mine -match [regex]::Escape('skills/task/SKILL.md')) "this project's Tasks.md must point at the protocol for the statuses"
+
+    $restated = @()
+    $mineLines = $mine -split "`r?`n"
+    for ($i = 0; $i -lt $mineLines.Count; $i++) {
+        if ($mineLines[$i] -match '^##\s+Backlog') { break }
+        foreach ($status in @('draft', 'planning', 'planned', 'in_progress', 'in_review',
+                              'changes_requested', 'approved', 'cancelled')) {
+            if ($mineLines[$i] -match [regex]::Escape($status)) { $restated += "line $($i + 1): $status" }
+        }
+    }
+    Assert-True ($restated.Count -eq 0) "this project's Tasks.md restates the statuses instead of pointing at them ($($restated -join '; '))"
 
     # The template states every key; a project need not. An omitted key falls back
     # to the human's own answer and then to the default, so leaving out one that
@@ -668,7 +703,7 @@ Test-Case 'a How to review section is never an empty heading' {
         Assert-True ($m.Groups[1].Value.Trim().Length -gt 0) "$($file.Name) has a How to review heading with nothing under it"
     }
 }
-Write-Host 'kinds and the heading prefix'
+Write-Section 'kinds and the heading prefix'
 
 $script:TaskKinds = @('feature', 'bug', 'task')
 
@@ -821,7 +856,7 @@ Test-Case 'a heading prefix matches its task file kind' {
     }
 }
 
-Write-Host 'the status decides whether a plan is required'
+Write-Section 'the status decides whether a plan is required'
 
 Test-Case 'the protocol states both routes out of draft, and both are human only' {
     $body = (Get-Content (Join-Path $root 'skills/task/SKILL.md') -Raw) -replace "`r`n", "`n"
@@ -874,7 +909,7 @@ Test-Case 'the backlog template documents the kinds and the plan-skipping route'
     Assert-True ($text -match 'no\s+prefix') 'the template must state the default kind'
     Assert-True ($text -match 'with\s+no\s+plan') 'the template must say planned with no plan means implement it'
 }
-Write-Host 'the GitHub build'
+Write-Section 'the GitHub build'
 
 $script:WorkflowPath = '.github/workflows/build.yml'
 
@@ -915,7 +950,45 @@ Test-Case 'the README says the tests also run in CI' {
     Assert-True ($readme -match [regex]::Escape('tests/Test-Plugin.ps1')) 'README.md must document the test command'
     Assert-True ($readme -match [regex]::Escape($script:WorkflowPath)) "README.md must name $script:WorkflowPath"
 }
-Write-Host 'claude plugin validate'
+Write-Section 'the repository tells an agent where things are'
+
+$script:ClaudeMdPath = 'CLAUDE.md'
+
+Test-Case 'a root CLAUDE.md names the test command and the source of truth' {
+    $path = Join-Path $root $script:ClaudeMdPath
+    Assert-True (Test-Path $path) 'CLAUDE.md is missing from the repository root'
+    $text = (Get-Content $path -Raw) -replace "`r`n", "`n"
+
+    Assert-True ($text -match 'Test-Plugin\.ps1') 'CLAUDE.md must name the test command'
+    Assert-True ($text -match '-Detailed') 'CLAUDE.md must name the switch that prints every case'
+    Assert-True ($text -match [regex]::Escape('skills/task/SKILL.md')) 'CLAUDE.md must point at the protocol as the single source of truth'
+    Assert-True ($text -match [regex]::Escape('.claude-plugin/plugin.json')) 'CLAUDE.md must name where the version is bumped'
+}
+
+Test-Case 'CLAUDE.md says where things are, not what the rules are' {
+    # The audit that produced this file found the protocol restated in five
+    # places. CLAUDE.md must not become a sixth: it names files, never statuses.
+    $text = Get-Content (Join-Path $root $script:ClaudeMdPath) -Raw
+    $statuses = @('draft', 'planning', 'planned', 'in_progress', 'in_review',
+                  'changes_requested', 'approved', 'cancelled')
+    $named = @($statuses | Where-Object { $text -match [regex]::Escape($_) })
+    Assert-True ($named.Count -eq 0) "CLAUDE.md states the status $($named -join ', '), which skills/task/SKILL.md owns alone"
+}
+
+Test-Case 'the suite is quiet unless asked, and writes to the output stream' {
+    $text = (Get-Content (Join-Path $root 'tests/Test-Plugin.ps1') -Raw) -replace "`r`n", "`n"
+    # Assembled, because the literal would otherwise be in the file it forbids.
+    $host_write = 'Write' + '-Host'
+
+    Assert-True ($text -match [regex]::Escape('param([switch] $Detailed)')) 'the suite must take a -Detailed switch'
+    Assert-True (-not ($text -match $host_write)) 'the suite must write to the output stream, so that a caller can filter it'
+    Assert-True ($text -match [regex]::Escape('Write-Output "passed')) 'the totals line must print whether or not -Detailed was passed'
+
+    $readme = Get-Content (Join-Path $root 'README.md') -Raw
+    Assert-True ($readme -match '-Detailed') 'README.md must document the switch'
+}
+
+Write-Section 'claude plugin validate'
 
 $claude = Get-Command claude -ErrorAction SilentlyContinue
 if ($claude) {
@@ -928,8 +1001,8 @@ else {
     Skip-Case 'claude plugin validate passes' 'claude is not on PATH'
 }
 
-Write-Host ''
-Write-Host "passed $script:Passed, failed $script:Failed, skipped $script:Skipped"
+Write-Output ''
+Write-Output "passed $script:Passed, failed $script:Failed, skipped $script:Skipped"
 
 if ($script:Failed -gt 0) { exit 1 }
 exit 0

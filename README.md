@@ -120,6 +120,11 @@ Plain PowerShell, no Pester. It checks the two manifests, the four skills'
 frontmatter, that the protocol's statuses and rules survived, that no `AGENTS.md` is
 left behind, and that `claude plugin validate` passes.
 
+It prints failures and a totals line, and nothing else: the agent is what runs it,
+and a list of passing cases tells it nothing it can act on. `-Detailed` prints
+every case under its section heading, which is what CI runs and what a human
+watching a run wants.
+
 The same command runs on every push and pull request, from
 `.github/workflows/build.yml`, on a Windows runner because the suite is Windows
 PowerShell 5.1. The build installs nothing and needs no API key: nothing in the

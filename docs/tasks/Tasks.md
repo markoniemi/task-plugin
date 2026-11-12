@@ -17,21 +17,9 @@ is removed when its task is cleaned, so this file shows open work only.
 Kinds are `feature:`, `bug:` and `task:`, written before the title, and they decide
 what the branch is called and nothing else. No prefix means `task`.
 
-Statuses:
-
-* `draft` — written down, not planned yet.
-* `planning` — a human asked the AI to plan it.
-* `planned` — cleared to implement: a plan written and waiting for a human to
-  verify it, or set by a human **with no plan** in the task file, which waives it.
-* `in_progress` — the AI is implementing it on its branch.
-* `in_review` — implementation ready on the branch, waiting for review.
-* `changes_requested` — review asked for changes.
-* `approved` — review passed, ready to merge.
-* `done` — merged and branch deleted.
-* `cancelled` — it will not happen, or it happened and was reverted. A human sets
-  it, from any status but `done`, and nothing comes back out of it.
-
-Priorities: `high` | `medium` | `low`.
+The statuses, and what each transition does, belong to the plugin:
+`skills/task/SKILL.md` states them and `README.md` beside this file explains them.
+Priorities are `high` | `medium` | `low`.
 
 ---
 
