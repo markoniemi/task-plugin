@@ -48,7 +48,9 @@ file: [not-done-status.md](not-done-status.md)
 
 Need a status stating that task is not implemented or the implementation reverted. What is the corresponding state in jira? Status means that task file can deleted, branch and commits removed and no need to update docs when task is deleted.
  
-### remind to clear context [planning, low]
+### remind to clear context [planned, low]
+
+file: [remind-to-clear-context.md](remind-to-clear-context.md)
 
 Is it possible to remind user to clear context after task is merged to master (or set to done)?
 
