@@ -241,14 +241,19 @@ picks the new commits up when the branch is pushed.
   merge, so `squash_on_merge` decides nothing. Set `done` and mirror it.
 * A branch and no request: merge it into `main`, delete the branch, set `done`.
   How you merge is `squash_on_merge`:
-  * On — the default — squash the branch into one commit whose message is
-    `<kind>: <title>` from the backlog heading:
+  * On — the default — squash the branch into one commit:
 
     ```
     git merge --squash <branch>
-    git commit -m "<kind>: <title>"
+    git commit
     git branch -D <branch>
     ```
+
+    Write that commit's message as you would any commit in this repository,
+    following its conventions. It describes **the change**, not the task's name:
+    this is the only message left on `main` once the branch is gone. This plugin
+    prescribes no format — a project that wants one states it in its own
+    `CLAUDE.md` or `AGENTS.md`.
 
     The delete is `-D` here because git does not record a squashed branch as
     merged and `-d` refuses it. Nothing else justifies `-D`.

@@ -1,7 +1,7 @@
 {
   "name": "task",
   "displayName": "task",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "A backlog-to-branch task protocol: a human writes down what should happen, the agent plans it, implements it on a branch, and the human verifies and merges.",
   "author": {
     "name": "Marko Niemi",

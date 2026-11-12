@@ -132,6 +132,15 @@ seeing the change work, written by whoever implemented it. Start there rather th
 with the diff. Nothing records whether you followed it - moving the task to
 `approved` is the whole signal.
 
+**What lands on `main`.** With `squash_on_merge` on, a task becomes one commit,
+and its message is written to this project's own conventions — the AI reads the
+existing history the way it would for any commit. The plugin imposes no format, so
+a project that wants a fixed one (Conventional Commits, a ticket prefix, a line
+limit) writes it down in its own instructions file — `CLAUDE.md` or whatever this
+project uses — not here. What the message
+must do is describe the change rather than name the task, because once the branch
+is deleted it is the only description left.
+
 Run `/task:clean-tasks` when finished tasks pile up: it deletes each `done` and
 each `cancelled` task file with its backlog entry, having first checked — for the
 `done` ones — that whatever the task established is written down in the plugin's

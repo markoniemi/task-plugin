@@ -420,10 +420,28 @@ Test-Case 'the approved to done transition states both merge shapes' {
                         'git branch -d', 'fast-forward')) {
         Assert-True ($step -match [regex]::Escape($rule)) "the transition must state '$rule'"
     }
+    # The squashed commit's message belongs to the project, not to this plugin.
+    foreach ($template in @('-m "<kind>', '<kind>: <title>', 'git commit -m')) {
+        Assert-True (-not ($step -match [regex]::Escape($template))) "the transition must not template the message with '$template'"
+    }
     # The two paths the agent does not merge on must say the key decides nothing,
     # or the agent is left to guess at squashing a history it does not own.
     Assert-True ($step -match 'the host merges it, not you') 'the request path must still be the host-s'
     Assert-True (-not ($step -match 'gh pr merge')) 'the agent must not merge the request itself'
+}
+
+Test-Case 'the squashed commit message is the project-s, not the plugin-s' {
+    # A templated subject names the ticket instead of the change, and it overrides
+    # whatever the project already does. Both are why the template was removed, so
+    # the deferral has to be stated or it grows back.
+    $body = (Get-Content (Join-Path $root 'skills/task/SKILL.md') -Raw) -replace "`r`n", "`n"
+    $pattern = '(?s)\n\*\*\x60approved.{0,30}done(.*?)(?=\n\*\*\x60|\n##\s)'
+    $step = [regex]::Match($body, $pattern).Value
+    Assert-True ($step.Length -gt 0) 'the approved to done transition was not found'
+
+    Assert-True ($step -match 'CLAUDE\.md' -or $step -match 'AGENTS\.md') 'the transition must point a project at its own instructions file'
+    Assert-True ($step -match 'prescribes no format|imposes no format') 'the transition must state that the plugin prescribes no format'
+    Assert-True ($step -match 'describes \*\*the change\*\*|describes the change') 'the transition must say the message describes the change'
 }
 
 Test-Case 'cancelling is human-only and never rewrites what landed' {
