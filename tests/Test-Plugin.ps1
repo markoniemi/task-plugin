@@ -420,8 +420,10 @@ Test-Case 'the approved to done transition states both merge shapes' {
                         'git branch -d', 'fast-forward')) {
         Assert-True ($step -match [regex]::Escape($rule)) "the transition must state '$rule'"
     }
-    # The squashed commit's message belongs to the project, not to this plugin.
-    foreach ($template in @('-m "<kind>', '<kind>: <title>', 'git commit -m')) {
+    # The squashed commit's message belongs to the project, not to this plugin: the
+    # command takes a message, and the protocol says nothing about its shape.
+    Assert-True ($step -match [regex]::Escape('git commit -m "<message>"')) 'the squash must commit with a message of its own'
+    foreach ($template in @('-m "<kind>', '<kind>: <title>', '<kind>: <id>')) {
         Assert-True (-not ($step -match [regex]::Escape($template))) "the transition must not template the message with '$template'"
     }
     # The two paths the agent does not merge on must say the key decides nothing,
@@ -431,17 +433,25 @@ Test-Case 'the approved to done transition states both merge shapes' {
 }
 
 Test-Case 'the squashed commit message is the project-s, not the plugin-s' {
-    # A templated subject names the ticket instead of the change, and it overrides
-    # whatever the project already does. Both are why the template was removed, so
-    # the deferral has to be stated or it grows back.
+    # The protocol says nothing about the message's shape: the agent writes it the
+    # way it writes any commit in the repository. Rules about subjects, moods,
+    # lengths or type prefixes belong to the project, so the protocol must not grow
+    # them - and it must not spend the tokens either, since it is read every time.
     $body = (Get-Content (Join-Path $root 'skills/task/SKILL.md') -Raw) -replace "`r`n", "`n"
     $pattern = '(?s)\n\*\*\x60approved.{0,30}done(.*?)(?=\n\*\*\x60|\n##\s)'
     $step = [regex]::Match($body, $pattern).Value
     Assert-True ($step.Length -gt 0) 'the approved to done transition was not found'
 
-    Assert-True ($step -match 'CLAUDE\.md' -or $step -match 'AGENTS\.md') 'the transition must point a project at its own instructions file'
-    Assert-True ($step -match 'prescribes no format|imposes no format') 'the transition must state that the plugin prescribes no format'
-    Assert-True ($step -match 'describes \*\*the change\*\*|describes the change') 'the transition must say the message describes the change'
+    foreach ($prescription in @('Conventional Commit', 'imperative', 'subject line',
+                                '50 char', '72 char', 'backlog heading')) {
+        Assert-True (-not ($step -match [regex]::Escape($prescription))) "the transition must not prescribe '$prescription'"
+    }
+
+    # Where the knowledge does belong: the human-facing README, which is read by a
+    # person once rather than by the agent on every invocation.
+    $readme = Get-Content (Join-Path $root 'docs/tasks/README.md') -Raw
+    Assert-True ($readme -match 'conventions') 'docs/tasks/README.md must say the message follows the project-s conventions'
+    Assert-True ($readme -match 'CLAUDE\.md') 'docs/tasks/README.md must name where a project states a format'
 }
 
 Test-Case 'cancelling is human-only and never rewrites what landed' {
