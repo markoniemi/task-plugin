@@ -1,6 +1,6 @@
 ---
 id: not-done-status
-status: in_review
+status: done
 priority: high
 kind: task
 branch: task/not-done-status
