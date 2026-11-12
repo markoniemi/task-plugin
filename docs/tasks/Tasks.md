@@ -52,13 +52,4 @@ Need a status stating that task is not implemented or the implementation reverte
 
 Is it possible to remind user to clear context after task is merged to master (or set to done)?
 
-### merge commit [done, high]
-
-file: [merge-commit.md](merge-commit.md)
-
-With squash_on_merge, the merge commit is just task: <id>. Merge commit should be something descriptive of task or change. Is there some best practice on merge commits that could be used.
-
-changes:
-- is merge commit in the scope of task-plugin? Perhaps task-plugin should not state merge commit message format at all. 
-- What kind of merge commits would claude do by default? Should merge commit format be in project agents.md file?
 
