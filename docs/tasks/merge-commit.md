@@ -1,6 +1,6 @@
 ---
 id: merge-commit
-status: planned
+status: in_progress
 priority: high
 kind: task
 ---
@@ -88,14 +88,9 @@ worth the protocol's breath (open question 1).
 
 No new file, no new configuration key, nothing for a human to configure.
 
-## Open questions
+## Decisions
 
-1. **A `Task: <id>` trailer.** The only task-specific thing a project's
-   conventions cannot supply: a git trailer on the squashed commit, so a commit on
-   `main` still points at the task file after `clean-tasks` deletes it. Three
-   answers: require it, suggest it, or leave it out and keep the plugin entirely
-   out of the message. The plan assumes **leave it out** — it is the position the
-   review's first question implies, and `git log --diff-filter=D -- docs/tasks/`
-   already finds a deleted task file.
-2. **Nothing else.** If you want the plugin to keep saying *anything* about shape
-   beyond "describe the change", say which sentence and it goes in step 1.
+1. **No `Task: <id>` trailer.** The plugin stays entirely out of the message
+   beyond "describe the change". `git log --diff-filter=D -- docs/tasks/` finds a
+   deleted task file when anyone needs it.
+2. **Nothing else about shape.** The project's conventions own it.
