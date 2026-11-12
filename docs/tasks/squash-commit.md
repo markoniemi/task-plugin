@@ -3,6 +3,7 @@ id: squash-commit
 status: done
 priority: high
 kind: task
+branch: task/squash-commit
 ---
 
 Add config item that tells ai to squash commits when merging to main.

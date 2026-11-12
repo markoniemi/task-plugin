@@ -3,6 +3,7 @@ id: merge-commit
 status: in_progress
 priority: high
 kind: task
+branch: task/merge-commit
 ---
 
 With squash_on_merge, the merge commit is just task: <id>. Merge commit should be
