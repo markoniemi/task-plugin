@@ -58,7 +58,9 @@ Add config item that tells ai to squash commits when merging to main.
 
 Is it possible to remind user to clear context after task is merged to master (or set to done)?
 
-### merge commit [planning, high]
+### merge commit [planned, high]
+
+file: [merge-commit.md](merge-commit.md)
 
 With squash_on_merge, the merge commit is just task: <id>. Merge commit should be something descriptive of task or change. Is there some best practice on merge commits that could be used.
 
