@@ -1,6 +1,6 @@
 ---
 id: merge-commit
-status: in_progress
+status: in_review
 priority: high
 kind: task
 branch: task/merge-commit
@@ -95,3 +95,42 @@ No new file, no new configuration key, nothing for a human to configure.
    beyond "describe the change". `git log --diff-filter=D -- docs/tasks/` finds a
    deleted task file when anyone needs it.
 2. **Nothing else about shape.** The project's conventions own it.
+
+## Result
+
+Done as planned, in commit 13ac4bf, across five files. Net effect is a deletion:
+the protocol lost a templated subject and gained three sentences saying the
+message is the project's to shape.
+
+Two things happened alongside it, both from `create_branch` being turned on
+mid-task:
+
+* The work of this task is committed on `main`, not on `task/merge-commit`. The
+  flip arrived after the task had started committing, and splitting one task
+  across both would read worse than finishing where it began.
+* Every task file now names a branch (commit 8c5f0a1). `branch:` names a branch
+  without asserting it exists, so backfilling it was enough; the test that
+  requires the key for every task file had started failing the moment the
+  configuration changed.
+
+## How to review
+
+1. Run the suite — `powershell -NoProfile -File tests\Test-Plugin.ps1`. It prints
+   `passed 65, failed 0, skipped 0`. 64 passed before; the new case is `the
+   squashed commit message is the project-s, not the plugin-s`. Run; that is the
+   output.
+2. `git show 13ac4bf -- skills/task/SKILL.md` — the whole change. The command
+   block lost `-m "<kind>: <title>"`, and the paragraph under it is what replaced
+   it. Check it tells you nothing about subject length, mood or prefixes.
+3. The same commit's test diff has two guards: the transition may not contain
+   `git commit -m`, `-m "<kind>` or `<kind>: <title>`, and it must point a project
+   at its own instructions file. The first is what stops the template growing
+   back.
+4. `git show 13ac4bf -- docs/tasks/README.md README.md` for the two human-facing
+   paragraphs. `docs/tasks/README.md` says "`CLAUDE.md` or whatever this project
+   uses" rather than naming `AGENTS.md`: the test `no living file names AGENTS.md
+   as the rules` forbids that file naming it, and the root README, which is
+   outside that guard, names both.
+5. **Not run:** the squash itself, so no message was written by these rules. This
+   project's own history is the nearest evidence of what the agent writes without
+   a template — `git log --oneline -8` shows the subjects, including this task's.
