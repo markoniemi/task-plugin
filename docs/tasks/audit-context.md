@@ -1,6 +1,6 @@
 ---
 id: audit-context
-status: planned
+status: in_progress
 priority: high
 kind: task
 branch: task/audit-context
@@ -82,6 +82,18 @@ Note on step 6: the existing `the template and this project do not drift` test
 reads this project's `Tasks.md` **frontmatter** only, so step 3 should not
 disturb it — but it is the one test most likely to be surprised, so run the suite
 after step 3 rather than at the end only.
+
+## Decisions
+
+1. **A root `CLAUDE.md` is wanted** (open question 2 — answered yes).
+2. **Quiet is the default, not a switch** (open question 3). The human stated they
+   never run the suite themselves: only the agent does. So the default output is
+   the one the agent should get — failures and the totals line — and the full
+   list of cases moves behind `-Detailed`, for CI and for a human who wants it.
+   This reverses step 2 of the plan, which had it opt-in.
+3. **The `/context` and `/usage` figures are still missing** (open question 1,
+   unanswered). Nothing in this task depends on them; section A of the report
+   stays arithmetic, and section J still names them as the way to replace it.
 
 ## Open questions
 
