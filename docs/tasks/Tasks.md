@@ -48,4 +48,16 @@ file: [not-done-status.md](not-done-status.md)
 
 Need a status stating that task is not implemented or the implementation reverted. What is the corresponding state in jira? Status means that task file can deleted, branch and commits removed and no need to update docs when task is deleted.
  
+### audit context [planned, high]
 
+file: [audit-context.md](audit-context.md)
+
+1. run audit context and write results to a file,
+2. create a plan to fix findings,
+3. review plan
+4. fix findings
+
+### reduce skill files [planning, low]
+
+- skill files are long, is there something that can be removed?
+- 
