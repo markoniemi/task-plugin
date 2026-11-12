@@ -1,6 +1,6 @@
 ---
 id: audit-context
-status: in_progress
+status: in_review
 priority: high
 kind: task
 branch: task/audit-context
@@ -109,3 +109,71 @@ after step 3 rather than at the end only.
    defensible and is yours.
 3. **`-Quiet` by default, or opt-in?** The plan makes it opt-in, so CI and a human
    at a terminal are unaffected. Default-quiet would save more and surprise more.
+
+## Result
+
+Done in commit 21f51ba on `task/audit-context`, across six files. The suite is at
+68 cases, up from 65.
+
+* **`CLAUDE.md`** — new, 43 lines. What the repo is and that
+  `skills/task/SKILL.md` owns the rules; the one test command and the `-Detailed`
+  switch; the instruction to grep `tests/Test-Plugin.ps1` rather than read it
+  whole; the table of what a protocol change touches; the reload-after-bump step;
+  the PowerShell 5.1 constraints.
+* **`tests/Test-Plugin.ps1`** — `param([switch] $Detailed)`. Passing cases and
+  section headings print only with it; failures, skips and the totals line always
+  print. Every `Write-Host` became `Write-Output`, so the output can be filtered
+  by whoever called it.
+* **`docs/tasks/Tasks.md`** — the 13-line status list became three lines pointing
+  at the protocol and at `README.md`.
+* **`README.md`** — a paragraph under **Tests** on the quiet default and
+  `-Detailed`. **`.github/workflows/build.yml`** passes `-Detailed`.
+  **`.claude-plugin/plugin.json`** is `0.9.0`.
+* Three new cases: `a root CLAUDE.md names the test command and the source of
+  truth`, `CLAUDE.md says where things are, not what the rules are`, and `the
+  suite is quiet unless asked, and writes to the output stream`. `CLAUDE.md` also
+  joined the `$living` list of the existing `AGENTS.md` guard.
+
+Two deviations worth reading:
+
+1. **The audit was wrong about the drift test.** It said `the template and this
+   project do not drift` compares frontmatter keys only; it also required this
+   project's `Tasks.md` to contain all nine status names, so step 3 failed it. The
+   guard now states the distinction it meant: the **template** must name every
+   status, because a new project's backlog is all its reader has, while **this**
+   project must point at the protocol and must not grow its own copy back. That is
+   a change to a guard a human had already reviewed, which is why it is listed
+   here rather than buried in the diff.
+2. **`-Quiet` became the default**, per the answered question, and the switch is
+   `-Detailed`. The plan had it the other way round.
+
+Not done, deliberately: finding **C2** — `skills/task/SKILL.md` at ~3,420 tokens
+loaded in full by every skill — belongs to the `reduce skill files` backlog entry.
+**C6** and **C8** are the user's own MCP and plugin settings and the audit only
+priced them.
+
+One thing the audit noticed and did not file: `.gitlab-ci.yml` runs
+`python scripts/run_ai_factory.py`, which does not exist in this repository. It is
+left alone; it is older than the plugin and is nobody's finding yet.
+
+## How to review
+
+1. `powershell -NoProfile -File tests\Test-Plugin.ps1` — prints exactly
+   `passed 68, failed 0, skipped 0`, one line and nothing else. Run; that is the
+   output.
+2. `powershell -NoProfile -File tests\Test-Plugin.ps1 -Detailed | Select-Object -Last 4`
+   — prints the last four lines only. Before this change the same pipe printed all
+   65 case lines, which is finding C4 in one command.
+3. Read `CLAUDE.md`, 43 lines, the whole of the new surface. The question to ask
+   of each line is whether it says *where* something is or *what* a rule is; the
+   second kind belongs in `skills/task/SKILL.md` and a test now fails on the
+   status names.
+4. `git show 21f51ba -- tests/Test-Plugin.ps1` and read the changed
+   `the template and this project do not drift` case against deviation 1 above.
+   That is the only pre-existing guard this task altered.
+5. `git show 21f51ba -- docs/tasks/Tasks.md` for the deleted status list.
+6. `docs/context-audit.md` is the report the plan answers; sections C1, C3, C4, C5
+   and C7 are the ones this commit implements. Section J still asks for `/context`
+   and `/usage`, which nothing here provides.
+7. **Not run:** CI. `build.yml` passes `-Detailed`, which is only exercised on a
+   Windows runner on push. Locally, step 2 is the same command.
