@@ -61,3 +61,8 @@ file: [audit-context.md](audit-context.md)
 
 - skill files are long, is there something that can be removed?
 - 
+
+### commit state changes [draft, medium]
+
+- task-plugin commits all state changes. This creates a lot of commits. Commiting state changes is important with multiple concurrent agents, but with single agent. Add a config value which changes this behaviour.
+
